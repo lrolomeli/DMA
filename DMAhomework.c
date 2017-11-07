@@ -81,7 +81,7 @@ void DMA0_IRQHandler(void)
 	DMA0->INT =DMA_INT_INT0_MASK;//Interrupt Request Register
 	DMA0->CDNE = DMA_CDNE_CDNE(1);//Clear DONE Status Bit Register
 	DMA_start();
-	PIT_delay(PIT_0, SYSTEMCLOCK, 0.000001);
+	PIT_delay(PIT_0, SYSTEMCLOCK, 0.00002);
 }
 
 int main(void)
@@ -92,7 +92,7 @@ int main(void)
 	PIT_clockGating();
 
 	initDAC();
-	PIT_delay(PIT_0, SYSTEMCLOCK, 0.000001);
+	PIT_delay(PIT_0, SYSTEMCLOCK, 0.00002);
 	/* This for loop should be replaced. By default this loop allows a single stepping. */
     for (;;)
     {
