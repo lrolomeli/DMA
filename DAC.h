@@ -15,6 +15,6 @@
 
 const uint8* getData(void);
 void initDAC(void);
-void signalValue(byte* value);
+void signalValue(byte value);
 
 #endif /* DAC_H_ */

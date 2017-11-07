@@ -34,6 +34,14 @@
 #include "NVIC.h"
 #include "DAC.h"
 
+static const uint8 sineData[SIGNAL_DATA] = {128,136,144,152,160,167,175,182,189,196,203,209,
+											215,221,226,231,236,240,243,247,249,251,253,254,
+											255,255,255,254,252,250,248,245,242,238,234,229,
+											224,218,213,206,200,193,186,179,171,163,156,148,
+											140,132,123,115,107,99,92,84,76,69,62,55,49,42,
+											37,31,26,21,17,13,10,7,5,3,1,0,0,0,1,2,4,6,8,
+											12,15,19,24,29,34,40,46,52,59,66,73,80,88,95,
+											103,111,119,127};
 uint8 destiVar=0; //defines destination data space
 
 void DMA_init(void)
@@ -46,53 +54,49 @@ void DMA_init(void)
 	DMAMUX->CHCFG[0] |= DMAMUX_CHCFG_ENBL_MASK | DMAMUX_CHCFG_TRIG_MASK | DMAMUX_CHCFG_SOURCE(60);
 	//enables DMA0 request
 	DMA0->ERQ = DMA_ERQ_ERQ0_MASK;
+	NVIC_enableInterruptAndPriority(DMA_CH0_IRQ,PRIORITY_5);
+	EnableInterrupts;
 }
 
 
 void DMA_start(void)
 {
 	 /*DMA Controller initialization*/
-	DMA0->TCD[0].SADDR = (uint32_t)(getData());//defines source data address
-	DMA0->TCD[0].SOFF = 0x01;//Source address signed offset
+	DMA0->TCD[0].SADDR = (uint32_t)(&sineData[0]);//defines source data address
+	DMA0->TCD[0].SOFF = 1;//Source address signed offset
 	DMA0->TCD[0].DADDR = (uint32_t)(&destiVar);//defines destination data address
-	DMA0->TCD[0].CITER_ELINKNO = DMA_CITER_ELINKNO_CITER(1);//CITER=1
+	DMA0->TCD[0].CITER_ELINKNO = DMA_CITER_ELINKNO_CITER(100);//CITER=1
 	DMA0->TCD[0].BITER_ELINKNO = DMA_BITER_ELINKNO_BITER(1);//BITER=1
-	DMA0->TCD[0].NBYTES_MLNO = 0x01;//byte number
+	DMA0->TCD[0].NBYTES_MLNO = 1;//byte number
 	DMA0->TCD[0].DOFF = 0x00;//destination address signed offset
 	DMA0->TCD[0].ATTR = DMA_ATTR_SSIZE(0) | DMA_ATTR_DSIZE(0);//8 bit transfer size, register default value is undefined
-	DMA0->TCD[0].SLAST = -0x01;//restores the source address to the initial value
-	DMA0->TCD[0].DLAST_SGA = 0x00;//restores the destination address to the initial value
+	DMA0->TCD[0].SLAST = -0x64;//restores the source address to the initial value
+	DMA0->TCD[0].DLAST_SGA = 0;//restores the destination address to the initial value
 	DMA0->TCD[0].CSR = DMA_CSR_INTMAJOR_MASK;//The end-of-major loop interrupt is enabled
 }
 
 void DMA0_IRQHandler(void)
 {
 	/**Configuration needed to run DMA*/
-	//DMA0->INT =DMA_INT_INT0_MASK;//Interrupt Request Register
-	//DMA0->CDNE = DMA_CDNE_CDNE(1);//Clear DONE Status Bit Register
+	DMA0->INT =DMA_INT_INT0_MASK;//Interrupt Request Register
+	DMA0->CDNE = DMA_CDNE_CDNE(1);//Clear DONE Status Bit Register
 	DMA_start();
-	signalValue(&destiVar);
-	PIT_delay(PIT_0, SYSTEMCLOCK, .001);
+	PIT_delay(PIT_0, SYSTEMCLOCK, 0.000001);
 }
 
 int main(void)
 {
+
+	DMA_init();
+	DMA_start();
 	PIT_clockGating();
 
 	initDAC();
-	DMA_init();
-	DMA_start();
-
-
-	NVIC_enableInterruptAndPriority(DMA_CH0_IRQ,PRIORITY_5);
-	EnableInterrupts;
-
-	PIT_delay(PIT_0, SYSTEMCLOCK, .001);
-
+	PIT_delay(PIT_0, SYSTEMCLOCK, 0.000001);
 	/* This for loop should be replaced. By default this loop allows a single stepping. */
     for (;;)
     {
-
+    	signalValue(destiVar);
     }
     /* Never leave main */
     return 0;
