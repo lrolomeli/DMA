@@ -33,6 +33,29 @@
 #include "PIT.h"
 #include "NVIC.h"
 #include "DAC.h"
+#include "MCG.h"
+#include "stdio.h"
+
+
+#define CLK_FREQ_HZ 50000000  /* CLKIN0 frequency */
+#define SLOW_IRC_FREQ 32768	/*This is the approximate value for the slow irc*/
+#define FAST_IRC_FREQ 4000000 /*This is the approximate value for the fast irc*/
+#define EXTERNAL_CLOCK 0 /*It defines an external clock*/
+#define PLL_ENABLE 1 /**PLL is enabled*/
+#define PLL_DISABLE 0 /**PLL is disabled*/
+#define CRYSTAL_OSC 1  /*It defines an crystal oscillator*/
+#define LOW_POWER 0     /* Set the oscillator for low power mode */
+#define SLOW_IRC 0 		/* Set the slow IRC */
+#define CLK0_TYPE 0     /* Crystal or canned oscillator clock input */
+#define PLL0_PRDIV 25    /* PLL predivider value */
+#define PLL0_VDIV 30    /* PLL multiplier value*/
+/** Macros for debugging*/
+#define DEBUG
+#define PLL_DIRECT_INIT
+
+
+
+
 
 static const uint8 sineData[SIGNAL_DATA] = {128,136,144,152,160,167,175,182,189,196,203,209,
 											215,221,226,231,236,240,243,247,249,251,253,254,
@@ -81,18 +104,29 @@ void DMA0_IRQHandler(void)
 	DMA0->INT =DMA_INT_INT0_MASK;//Interrupt Request Register
 	DMA0->CDNE = DMA_CDNE_CDNE(1);//Clear DONE Status Bit Register
 	DMA_start();
-	PIT_delay(PIT_0, SYSTEMCLOCK, 0.00002);
+	PIT_delay(PIT_0, SYSTEMCLOCK, 0.000055);
 }
 
 int main(void)
 {
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	   int mcg_clk_hz;
+	    unsigned char modeMCG = 0;
+
+	       mcg_clk_hz = pll_init(CLK_FREQ_HZ, LOW_POWER, EXTERNAL_CLOCK, PLL0_PRDIV, PLL0_VDIV, PLL_ENABLE);
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 
 	DMA_init();
 	DMA_start();
 	PIT_clockGating();
 
 	initDAC();
-	PIT_delay(PIT_0, SYSTEMCLOCK, 0.00002);
+	PIT_delay(PIT_0, SYSTEMCLOCK, 0.000055);
 	/* This for loop should be replaced. By default this loop allows a single stepping. */
     for (;;)
     {
